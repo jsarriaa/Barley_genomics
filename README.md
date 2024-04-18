@@ -2,8 +2,6 @@
 ---
 > Script written in Python (Version 3.11.2)
 
-> Do not use previous versions of VCF_Manager_2
-
 Manage big VCF files with large pool of varieties to extract smaller sized files to process data from a shorter list of varieties of interest. 
 Works with z compressed files, aswell as the output one.
 
