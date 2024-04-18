@@ -1,4 +1,4 @@
-# VCF_Manager_V2
+# VCF_Manager_V1.1
 ---
 > Script written in Python (Version 3.11.2)
 
