@@ -19,8 +19,9 @@ parser.add_argument('--out-distance-matrix', '-od', type=str, required=False, he
 parser.add_argument('--out-count-matrix', '-oc', type=str, required=False, help='The output count matrix file path', metavar='<count_matrix.tsv>')
 parser.add_argument('--interestlist', '-list', type=str, required=False, help='The input list of varieties to select inside the VCF file. Separe them with COMMA', metavar='<variety1,variety2,...>')
 parser.add_argument('--interestfile', '-file-list', type=str, required=False, help='A .txt file containing the list of varieties to select inside the VCF file. Each line belong to each variety name', metavar="<list.txt>")
-parser.add_argument('--plot', '-p', nargs='?', const='default', default='Empty', type=str, required=False, help='Plot the distance matrix in a heatmap distributed by a hierarchical dendrogram. If not an output path is provided, by default a distance_heatmap.pdf will be generated at executing folder', metavar='<output.pdf>')
+parser.add_argument('--plot', '-p', nargs='?', const='default', default='Empty', type=str, required=False, help='Plot the distance matrix in a heatmap distributed by a hierarchical dendrogram. If not an output path is provided, by default a distance_heatmap.pdf will be generated at executing folder. Also provide the .txt hierarchical tree', metavar='<output.pdf>')
 parser.add_argument('--color-threshold', '-ct', type=float, required=False, default=0.45, help='The color threshold for the heatmap. The default is 0.45', metavar='<0-1    e.g. -ct 0.55>')
+parser.add_argument('--ignore-tree', '-notree', action='store_true', required=False, help='Ignore the tree generation and plot the heatmap only')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -85,12 +86,16 @@ if args.interestlist or args.interestfile:
     
     print("\nYou are providing a list of varieties to select from the VCF file")
     print("The varieties to process are:\n")
+    species_names = list(VCFcolumns.keys())
+
     for key in VCFcolumns.keys():
         print(key)
 
 else:
     print("\nYou are using all the varieties present in the VCF file (default)")
     print("The varieties to process are:\n")
+    species_names = list(VCFcolumns.keys())
+
     for key in VCFcolumns.keys():
         print(key)
 
@@ -256,6 +261,7 @@ from scipy.cluster import hierarchy
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 import warnings
+from scipy.cluster.hierarchy import leaves_list
 
 
 
@@ -292,8 +298,6 @@ if args.plot:
             warnings.filterwarnings('ignore')
             linkage = hierarchy.linkage(distance_matrix, method='average')
 
-
-
         # Create a new figure with two subplots
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 16))
 
@@ -308,7 +312,6 @@ if args.plot:
         #adjust the size of the figure
         plt.subplots_adjust(hspace=0.5, left=0.2)
 
-        from scipy.cluster.hierarchy import leaves_list
         leaves_order = leaves_list(linkage) #saving the order of the leaves for further graphs
 
         # print(dendrogram['leaves']) #just code to check checkpoint
@@ -329,5 +332,52 @@ if args.plot:
         pdf.savefig()
         plt.clf()  # Clear the figure after saving it to the PDF
 
-    print(f"all done! check your file {plotfile}\n")
+print(f"all done! check your file {plotfile}\n")
 
+if not args.ignore_tree:
+    import importlib
+    import subprocess
+    import sys
+    from scipy.cluster.hierarchy import to_tree
+
+    def install(package):
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+    install('ete3')
+    from ete3 import ClusterTree
+
+    # Convert the linkage matrix to a scipy hierarchical clustering
+    hclust = to_tree(linkage)
+
+     # List of species names in the same order as the rows of the linkage matrix
+    species = ["species1", "species2", "species3", "species4"]  # Replace with your actual species names
+
+    # Function to convert a scipy hierarchical clustering to Newick format
+    def convert_to_newick(node):
+        if node.is_leaf():
+            return f"{species_names[node.id]}:{node.dist}"
+        else:
+            # If the node has a single descendant, merge it with its descendant
+            if node.left is None or node.right is None:
+                return convert_to_newick(node.left if node.right is None else node.right)
+            else:
+                return f"({convert_to_newick(node.left)},{convert_to_newick(node.right)}):{node.dist}"    # Convert the scipy hierarchical clustering to Newick format
+    newick = convert_to_newick(hclust)
+
+    # Save the tree as a newick tree .txt
+    treefile = f"{distfile.split('.')[0]}_tree.txt"
+    with open(treefile, 'w') as f:
+    # Ensure the newick string ends with a semicolon
+        if not newick.endswith(';'):
+            newick += ';'
+        f.write(newick)
+
+    treefile = "distancematrix_tree.txt"
+    with open(treefile, 'w') as f:
+        f.write(newick)
+
+    print(f"Newick tree saved as {treefile}\n")
+exit()
