@@ -38,7 +38,7 @@ Edit path and name of distance matrix output
 
 Edit path and name of count matrix output
 
-`python /path/VCF_Distance_V1.py -od <countmatrixname.tsv>`
+`python /path/VCF_Distance_V1.py -oc <countmatrixname.tsv>`
 
 ---
 **-list, --interestlist**
@@ -72,10 +72,17 @@ Plot the distance matrix in a heatmap distributed by a hirarchical dendrogram. I
 
 `python /path/VCF_Distance_V1.py -p <distance_heatmap_NAME.pdf>`
 
+a `distance_tree.txt` will be also saved, in a [Newick tree](https://en.wikipedia.org/wiki/Newick_format) format. 
+To avoid the generation of this file, just add the ´--ignore-tree´ / ´-notree´ arguments:
+
+`python /path/VCF_Distance_V1.py -p <distance_heatmap_NAME.pdf> -notree`
+
+
 ---
 **-ct, --color-threshold**
 
 If _--plot__ option is up, you can change the threshold to color the different clusters of hierarchical dendrogram. Values between 0 and 1 (e.g. 0.55). If it is not modified by default is 0.45.
 
 `python /path/VCF_Distance_V1.py -p <distance_heatmap_NAME.pdf> ct 0.75`
-`python /path/VCF_Distance_V1.py -p <heatmap_distance.pdf> -ct 0.55
+
+`python /path/VCF_Distance_V1.py -p <heatmap_distance.pdf> -ct 0.55`
